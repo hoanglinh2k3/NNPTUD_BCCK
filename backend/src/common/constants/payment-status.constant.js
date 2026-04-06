@@ -1,0 +1,12 @@
+const PAYMENT_STATUS = {
+  UNPAID: 'UNPAID',
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED'
+};
+
+module.exports = {
+  PAYMENT_STATUS,
+  PAYMENT_STATUS_VALUES: Object.values(PAYMENT_STATUS)
+};
