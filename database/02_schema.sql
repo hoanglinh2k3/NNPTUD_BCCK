@@ -1,0 +1,214 @@
+USE DecorShopDB;
+GO
+
+CREATE TABLE Role (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(50) NOT NULL UNIQUE,
+    Description NVARCHAR(255),
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE TABLE [User] (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    RoleId INT NOT NULL,
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) NOT NULL UNIQUE,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    Phone NVARCHAR(20),
+    AvatarUrl NVARCHAR(255),
+    Status NVARCHAR(20) DEFAULT 'ACTIVE',
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_User_Role FOREIGN KEY (RoleId) REFERENCES Role(Id)
+);
+GO
+
+CREATE TABLE Category (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(100) NOT NULL,
+    Slug NVARCHAR(120) UNIQUE,
+    Description NVARCHAR(255),
+    ParentId INT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Category_Parent FOREIGN KEY (ParentId) REFERENCES Category(Id)
+);
+GO
+
+CREATE TABLE Product (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    CategoryId INT NOT NULL,
+    Name NVARCHAR(150) NOT NULL,
+    Slug NVARCHAR(180) UNIQUE,
+    Description NVARCHAR(MAX),
+    Price DECIMAL(18,2) NOT NULL,
+    DiscountPrice DECIMAL(18,2) NULL,
+    SKU NVARCHAR(50) UNIQUE,
+    Material NVARCHAR(100) NULL,
+    Color NVARCHAR(100) NULL,
+    Size NVARCHAR(100) NULL,
+    CollectionName NVARCHAR(100) NULL,
+    Status NVARCHAR(20) DEFAULT 'ACTIVE',
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Product_Category FOREIGN KEY (CategoryId) REFERENCES Category(Id)
+);
+GO
+
+CREATE TABLE ProductImage (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    ProductId INT NOT NULL,
+    ImageUrl NVARCHAR(255) NOT NULL,
+    IsPrimary BIT DEFAULT 0,
+    SortOrder INT DEFAULT 0,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_ProductImage_Product FOREIGN KEY (ProductId) REFERENCES Product(Id)
+);
+GO
+
+CREATE TABLE Inventory (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    ProductId INT NOT NULL UNIQUE,
+    Quantity INT NOT NULL DEFAULT 0,
+    ReservedQuantity INT NOT NULL DEFAULT 0,
+    SoldQuantity INT NOT NULL DEFAULT 0,
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Inventory_Product FOREIGN KEY (ProductId) REFERENCES Product(Id)
+);
+GO
+
+CREATE TABLE Cart (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL UNIQUE,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Cart_User FOREIGN KEY (UserId) REFERENCES [User](Id)
+);
+GO
+
+CREATE TABLE CartItem (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    CartId INT NOT NULL,
+    ProductId INT NOT NULL,
+    Quantity INT NOT NULL,
+    UnitPrice DECIMAL(18,2) NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_CartItem_Cart FOREIGN KEY (CartId) REFERENCES Cart(Id),
+    CONSTRAINT FK_CartItem_Product FOREIGN KEY (ProductId) REFERENCES Product(Id)
+);
+GO
+
+CREATE TABLE Address (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL,
+    ReceiverName NVARCHAR(100) NOT NULL,
+    Phone NVARCHAR(20) NOT NULL,
+    Province NVARCHAR(100),
+    District NVARCHAR(100),
+    Ward NVARCHAR(100),
+    DetailAddress NVARCHAR(255),
+    IsDefault BIT DEFAULT 0,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Address_User FOREIGN KEY (UserId) REFERENCES [User](Id)
+);
+GO
+
+CREATE TABLE [Order] (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL,
+    AddressId INT NOT NULL,
+    OrderCode NVARCHAR(50) NOT NULL UNIQUE,
+    TotalAmount DECIMAL(18,2) NOT NULL,
+    Status NVARCHAR(30) NOT NULL,
+    PaymentStatus NVARCHAR(30) NOT NULL,
+    Note NVARCHAR(255),
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Order_User FOREIGN KEY (UserId) REFERENCES [User](Id),
+    CONSTRAINT FK_Order_Address FOREIGN KEY (AddressId) REFERENCES Address(Id)
+);
+GO
+
+CREATE TABLE OrderItem (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    OrderId INT NOT NULL,
+    ProductId INT NOT NULL,
+    ProductName NVARCHAR(150) NOT NULL,
+    Quantity INT NOT NULL,
+    UnitPrice DECIMAL(18,2) NOT NULL,
+    SubTotal DECIMAL(18,2) NOT NULL,
+    CONSTRAINT FK_OrderItem_Order FOREIGN KEY (OrderId) REFERENCES [Order](Id),
+    CONSTRAINT FK_OrderItem_Product FOREIGN KEY (ProductId) REFERENCES Product(Id)
+);
+GO
+
+CREATE TABLE Payment (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    OrderId INT NOT NULL,
+    Method NVARCHAR(30) NOT NULL,
+    Amount DECIMAL(18,2) NOT NULL,
+    Status NVARCHAR(30) NOT NULL,
+    TransactionCode NVARCHAR(100),
+    PaidAt DATETIME NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Payment_Order FOREIGN KEY (OrderId) REFERENCES [Order](Id)
+);
+GO
+
+CREATE TABLE Message (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    SenderId INT NOT NULL,
+    ReceiverId INT NOT NULL,
+    Content NVARCHAR(MAX) NULL,
+    MessageType NVARCHAR(20) DEFAULT 'TEXT',
+    FileUrl NVARCHAR(255) NULL,
+    IsRead BIT DEFAULT 0,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Message_Sender FOREIGN KEY (SenderId) REFERENCES [User](Id),
+    CONSTRAINT FK_Message_Receiver FOREIGN KEY (ReceiverId) REFERENCES [User](Id)
+);
+GO
+
+CREATE TABLE Notification (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL,
+    Title NVARCHAR(150) NOT NULL,
+    Content NVARCHAR(255),
+    Type NVARCHAR(30),
+    IsRead BIT DEFAULT 0,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Notification_User FOREIGN KEY (UserId) REFERENCES [User](Id)
+);
+GO
+
+CREATE TABLE Review (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NOT NULL,
+    ProductId INT NOT NULL,
+    Rating INT NOT NULL,
+    Comment NVARCHAR(1000) NULL,
+    Status NVARCHAR(20) DEFAULT 'VISIBLE',
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Review_User FOREIGN KEY (UserId) REFERENCES [User](Id),
+    CONSTRAINT FK_Review_Product FOREIGN KEY (ProductId) REFERENCES Product(Id)
+);
+GO
+
+CREATE TABLE UploadFile (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NULL,
+    OriginalName NVARCHAR(255) NOT NULL,
+    StoredName NVARCHAR(255) NOT NULL,
+    FilePath NVARCHAR(255) NOT NULL,
+    MimeType NVARCHAR(100) NULL,
+    FileSize BIGINT NULL,
+    UploadType NVARCHAR(50) NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_UploadFile_User FOREIGN KEY (UserId) REFERENCES [User](Id)
+);
+GO
