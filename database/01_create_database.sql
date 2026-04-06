@@ -1,0 +1,5 @@
+CREATE DATABASE DecorShopDB;
+GO
+
+USE DecorShopDB;
+GO
